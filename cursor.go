@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Queriable is the interface that wraps the Query method.
-type Queriable interface {
+// Queryable is the interface that wraps the Query method.
+type Queryable interface {
 	// Begin starts a pseudo nested transaction.
 	Begin(ctx context.Context) (pgx.Tx, error)
 	// Exec executes a query that doesn't return rows.
@@ -22,7 +22,7 @@ type Queriable interface {
 // Querier represents a PostgreSQL cursor querier.
 type Querier struct {
 	// Querier is the interface that wraps the Query method.
-	Querier Queriable
+	Querier Queryable
 }
 
 // Query executes a query that returns rows.
@@ -60,10 +60,10 @@ var _ pgx.Rows = &Cursor{}
 // Cursor is a wrapper around pgx.Cursor.
 type Cursor struct {
 	err  error
+	name string
 	tx   pgx.Tx
 	rows pgx.Rows
 	ctx  context.Context
-	name string
 }
 
 // Err implements pgx.Rows.
@@ -81,10 +81,9 @@ func (r *Cursor) Conn() *pgx.Conn {
 
 // Close implements pgx.Rows.
 func (r *Cursor) Close() {
-	// close the rows
 	if r.rows != nil {
-		r.rows.Close()
-		r.rows = nil
+		// release the rows
+		r.release()
 	}
 	// rollback the transaction
 	if err := r.tx.Rollback(r.ctx); err != nil {
@@ -122,9 +121,8 @@ func (r *Cursor) Next() bool {
 	}
 
 	if !r.rows.Next() {
-		// close the rows
-		r.rows.Close()
-		r.rows = nil
+		// release the rows
+		r.release()
 		// done!
 		return false
 	}
@@ -157,4 +155,14 @@ func (r *Cursor) Values() ([]any, error) {
 	}
 	// noop
 	return nil, nil
+}
+
+// release closes the rows and sets the error if any.
+func (r *Cursor) release() {
+	// close the rows
+	r.rows.Close()
+	// set the error if any
+	r.err = r.rows.Err()
+	// reset the rows
+	r.rows = nil
 }
