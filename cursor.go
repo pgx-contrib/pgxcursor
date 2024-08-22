@@ -36,16 +36,7 @@ func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Row
 		return nil, err
 	}
 
-	// prepare the rows
-	rows := &Cursor{
-		// general information
-		tx:  tx,
-		ctx: ctx,
-		// cursor information
-		name: name,
-	}
-
-	query = fmt.Sprintf("DECLARE %q CURSOR FOR %s", rows.name, query)
+	query = fmt.Sprintf("DECLARE %q CURSOR FOR %s", name, query)
 	// declare the cursor
 	if _, err := tx.Exec(ctx, query, args...); err != nil {
 		// rollback the transaction
@@ -54,20 +45,25 @@ func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Row
 		return nil, err
 	}
 
-	return rows, nil
+	// prepare the cursor
+	cursor := &Cursor{
+		tx:   tx,
+		ctx:  ctx,
+		name: name,
+	}
+
+	return cursor, nil
 }
 
 var _ pgx.Rows = &Cursor{}
 
 // Cursor is a wrapper around pgx.Cursor.
 type Cursor struct {
-	// general information
-	tx  pgx.Tx
-	err error
-	ctx context.Context
-	// cursor information
-	name string
+	err  error
+	tx   pgx.Tx
 	rows pgx.Rows
+	ctx  context.Context
+	name string
 }
 
 // Err implements pgx.Rows.

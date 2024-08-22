@@ -16,16 +16,16 @@ func ExampleQuerier() {
 		panic(err)
 	}
 
-	pool, err := pgxpool.NewWithConfig(context.TODO(), config)
+	conn, err := pgxpool.NewWithConfig(context.TODO(), config)
 	if err != nil {
 		panic(err)
 	}
 	// close the pool
-	defer pool.Close()
+	defer conn.Close()
 
-	iterator := &pgxiter.Querier{Querier: pool}
+	querier := &pgxiter.Querier{Querier: conn}
 	// start the cursor
-	rows, err := iterator.Query(context.TODO(), "SELECT * FROM user")
+	rows, err := querier.Query(context.TODO(), "SELECT * FROM user")
 	if err != nil {
 		panic(err)
 	}
