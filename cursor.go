@@ -27,18 +27,6 @@ type Querier struct {
 	Querier Queryable
 }
 
-// Begin implements Queryable.
-func (c *Querier) Begin(ctx context.Context) (pgx.Tx, error) {
-	// forward the call
-	return c.Querier.Begin(ctx)
-}
-
-// Exec implements Queryable.
-func (c *Querier) Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
-	// forward the call
-	return c.Querier.Exec(ctx, query, args...)
-}
-
 // Query executes a query that returns rows.
 func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
 	// predefined cursor name
@@ -98,8 +86,8 @@ func (r *Cursor) Conn() *pgx.Conn {
 // Close implements pgx.Rows.
 func (r *Cursor) Close() {
 	if r.rows != nil {
-		// release the rows
-		r.release()
+		// close the rows
+		r.close()
 	}
 	// rollback the transaction
 	if err := r.tx.Rollback(r.ctx); err != nil {
@@ -128,17 +116,15 @@ func (r *Cursor) CommandTag() pgconn.CommandTag {
 // Next implements pgx.Rows.
 func (r *Cursor) Next() bool {
 	if r.rows == nil {
-		// if name is empty, then the cursor is not declared
-		if r.rows, r.err = r.tx.Query(r.ctx, r.query()); r.err != nil {
-			return false
-		}
+		// move the cursor
+		return r.next()
 	}
 
 	if !r.rows.Next() {
-		// release the rows
-		r.release()
-		// done!
-		return false
+		// close the rows
+		r.close()
+		// move to the next row
+		return r.next()
 	}
 
 	return true
@@ -171,17 +157,25 @@ func (r *Cursor) Values() ([]any, error) {
 	return nil, nil
 }
 
-// query returns the query to fetch the next rows.
-func (r *Cursor) query() string {
+// next fetches the next rows.
+func (r *Cursor) next() bool {
+	var query string
+	// prepare the query
 	if r.cap > 0 {
-		return fmt.Sprintf("FETCH %d FROM %v", r.cap, r.name)
+		query = fmt.Sprintf("FETCH %d FROM %v", r.cap, r.name)
 	} else {
-		return fmt.Sprintf("FETCH NEXT FROM %v", r.name)
+		query = fmt.Sprintf("FETCH NEXT FROM %v", r.name)
 	}
+	// if name is empty, then the cursor is not declared
+	if r.rows, r.err = r.tx.Query(r.ctx, query); r.err != nil {
+		return false
+	}
+
+	return r.rows.Next()
 }
 
-// release closes the rows and sets the error if any.
-func (r *Cursor) release() {
+// close closes the rows and sets the error if any.
+func (r *Cursor) close() {
 	// close the rows
 	r.rows.Close()
 	// set the error if any
