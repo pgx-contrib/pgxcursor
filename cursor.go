@@ -27,6 +27,18 @@ type Querier struct {
 	Querier Queryable
 }
 
+// Begin implements Queryable.
+func (c *Querier) Begin(ctx context.Context) (pgx.Tx, error) {
+	// forward the call
+	return c.Querier.Begin(ctx)
+}
+
+// Exec implements Queryable.
+func (c *Querier) Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
+	// forward the call
+	return c.Querier.Exec(ctx, query, args...)
+}
+
 // Query executes a query that returns rows.
 func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
 	// predefined cursor name
