@@ -21,6 +21,8 @@ type Queryable interface {
 
 // Querier represents a PostgreSQL cursor querier.
 type Querier struct {
+	// Capacity is the maximum number of rows to fetch for each iteration.
+	Capacity int
 	// Querier is the interface that wraps the Query method.
 	Querier Queryable
 }
@@ -49,6 +51,7 @@ func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Row
 	cursor := &Cursor{
 		tx:   tx,
 		ctx:  ctx,
+		cap:  c.Capacity,
 		name: name,
 	}
 
@@ -59,6 +62,7 @@ var _ pgx.Rows = &Cursor{}
 
 // Cursor is a wrapper around pgx.Cursor.
 type Cursor struct {
+	cap  int
 	err  error
 	name string
 	tx   pgx.Tx
@@ -112,10 +116,8 @@ func (r *Cursor) CommandTag() pgconn.CommandTag {
 // Next implements pgx.Rows.
 func (r *Cursor) Next() bool {
 	if r.rows == nil {
-		// declare the cursor
-		query := "FETCH NEXT FROM " + r.name
 		// if name is empty, then the cursor is not declared
-		if r.rows, r.err = r.tx.Query(r.ctx, query); r.err != nil {
+		if r.rows, r.err = r.tx.Query(r.ctx, r.query()); r.err != nil {
 			return false
 		}
 	}
@@ -155,6 +157,15 @@ func (r *Cursor) Values() ([]any, error) {
 	}
 	// noop
 	return nil, nil
+}
+
+// query returns the query to fetch the next rows.
+func (r *Cursor) query() string {
+	if r.cap > 0 {
+		return fmt.Sprintf("FETCH %d FROM %v", r.cap, r.name)
+	} else {
+		return fmt.Sprintf("FETCH NEXT FROM %v", r.name)
+	}
 }
 
 // release closes the rows and sets the error if any.
