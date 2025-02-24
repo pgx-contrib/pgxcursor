@@ -1,4 +1,4 @@
-package pgxiter
+package pgxcursor
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Row
 	}
 
 	// prepare the cursor
-	cursor := &Cursor{
+	cursor := &Rows{
 		tx:   tx,
 		ctx:  ctx,
 		cap:  c.Capacity,
@@ -58,10 +58,10 @@ func (c *Querier) Query(ctx context.Context, query string, args ...any) (pgx.Row
 	return cursor, nil
 }
 
-var _ pgx.Rows = &Cursor{}
+var _ pgx.Rows = &Rows{}
 
-// Cursor is a wrapper around pgx.Cursor.
-type Cursor struct {
+// Rows is a wrapper around pgx.Rows.
+type Rows struct {
 	cap  int
 	err  error
 	name string
@@ -71,7 +71,7 @@ type Cursor struct {
 }
 
 // Err implements pgx.Rows.
-func (r *Cursor) Err() error {
+func (r *Rows) Err() error {
 	if r.rows != nil {
 		return r.rows.Err()
 	}
@@ -79,12 +79,12 @@ func (r *Cursor) Err() error {
 }
 
 // Conn implements pgx.Rows.
-func (r *Cursor) Conn() *pgx.Conn {
+func (r *Rows) Conn() *pgx.Conn {
 	return r.tx.Conn()
 }
 
 // Close implements pgx.Rows.
-func (r *Cursor) Close() {
+func (r *Rows) Close() {
 	if r.rows != nil {
 		// close the rows
 		r.close()
@@ -96,7 +96,7 @@ func (r *Cursor) Close() {
 }
 
 // FieldDescriptions implements pgx.Rows.
-func (r *Cursor) FieldDescriptions() []pgconn.FieldDescription {
+func (r *Rows) FieldDescriptions() []pgconn.FieldDescription {
 	if r.rows != nil {
 		return r.rows.FieldDescriptions()
 	}
@@ -105,7 +105,7 @@ func (r *Cursor) FieldDescriptions() []pgconn.FieldDescription {
 }
 
 // CommandTag implements pgx.Rows.
-func (r *Cursor) CommandTag() pgconn.CommandTag {
+func (r *Rows) CommandTag() pgconn.CommandTag {
 	if r.rows != nil {
 		return r.rows.CommandTag()
 	}
@@ -114,7 +114,7 @@ func (r *Cursor) CommandTag() pgconn.CommandTag {
 }
 
 // Next implements pgx.Rows.
-func (r *Cursor) Next() bool {
+func (r *Rows) Next() bool {
 	if r.rows == nil {
 		// move the cursor
 		return r.next()
@@ -131,7 +131,7 @@ func (r *Cursor) Next() bool {
 }
 
 // Scan implements pgx.Rows.
-func (r *Cursor) Scan(dest ...any) error {
+func (r *Rows) Scan(dest ...any) error {
 	if r.rows != nil {
 		return r.rows.Scan(dest...)
 	}
@@ -140,7 +140,7 @@ func (r *Cursor) Scan(dest ...any) error {
 }
 
 // RawValues implements pgx.Rows.
-func (r *Cursor) RawValues() [][]byte {
+func (r *Rows) RawValues() [][]byte {
 	if r.rows != nil {
 		return r.rows.RawValues()
 	}
@@ -149,7 +149,7 @@ func (r *Cursor) RawValues() [][]byte {
 }
 
 // Values implements pgx.Rows.
-func (r *Cursor) Values() ([]any, error) {
+func (r *Rows) Values() ([]any, error) {
 	if r.rows != nil {
 		return r.rows.Values()
 	}
@@ -158,7 +158,7 @@ func (r *Cursor) Values() ([]any, error) {
 }
 
 // next fetches the next rows.
-func (r *Cursor) next() bool {
+func (r *Rows) next() bool {
 	var query string
 	// prepare the query
 	if r.cap > 0 {
@@ -175,7 +175,7 @@ func (r *Cursor) next() bool {
 }
 
 // close closes the rows and sets the error if any.
-func (r *Cursor) close() {
+func (r *Rows) close() {
 	// close the rows
 	r.rows.Close()
 	// set the error if any

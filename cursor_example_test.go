@@ -1,4 +1,4 @@
-package pgxiter_test
+package pgxcursor_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pgx-contrib/pgxiter"
+	"github.com/pgx-contrib/pgxcursor"
 )
 
 func ExampleQuerier() {
@@ -23,7 +23,7 @@ func ExampleQuerier() {
 	// close the pool
 	defer conn.Close()
 
-	querier := &pgxiter.Querier{Querier: conn}
+	querier := &pgxcursor.Querier{Querier: conn}
 	// start the cursor
 	rows, err := querier.Query(context.TODO(), "SELECT * FROM user")
 	if err != nil {

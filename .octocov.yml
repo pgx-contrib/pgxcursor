@@ -1,0 +1,27 @@
+---
+coverage:
+  badge:
+    path: .github/coverage.svg
+  paths:
+    - coverprofile.out
+  acceptable: 100%
+
+comment:
+  if: is_pull_request
+  deletePrevious: true
+
+summary:
+  if: true
+
+diff:
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+
+report:
+  if: is_default_branch
+  datastores:
+    - artifact://${GITHUB_REPOSITORY}
+
+push:
+  if: is_default_branch
+  message: Update by octocov [skip ci]
