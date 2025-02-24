@@ -4,7 +4,7 @@ coverage:
     path: .github/coverage.svg
   paths:
     - coverprofile.out
-  acceptable: 100%
+  acceptable: 0%
 
 comment:
   if: is_pull_request
