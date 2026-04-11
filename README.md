@@ -73,10 +73,10 @@ func main() {
 
 ## Capacity strategy
 
-| `Capacity` | SQL issued per batch | Best for |
-|------------|----------------------|----------|
-| `0` (default) | `FETCH NEXT FROM cursor` | Low-memory, one row at a time |
-| `N > 0` | `FETCH N FROM cursor` | Throughput — tune N to your working set |
+| `Capacity`    | SQL issued per batch     | Best for                                |
+| ------------- | ------------------------ | --------------------------------------- |
+| `0` (default) | `FETCH NEXT FROM cursor` | Low-memory, one row at a time           |
+| `N > 0`       | `FETCH N FROM cursor`    | Throughput — tune N to your working set |
 
 ## Development
 
@@ -109,4 +109,4 @@ go tool ginkgo run -r
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+[MIT](./LICENSE).
