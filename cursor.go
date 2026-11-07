@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // Queryable is the interface that wraps the Query method.
@@ -99,6 +100,15 @@ func (r *Rows) Close() {
 func (r *Rows) FieldDescriptions() []pgconn.FieldDescription {
 	if r.rows != nil {
 		return r.rows.FieldDescriptions()
+	}
+	// noop
+	return nil
+}
+
+// TypeMap implements pgx.Rows.
+func (r *Rows) TypeMap() *pgtype.Map {
+	if r.rows != nil {
+		return r.rows.TypeMap()
 	}
 	// noop
 	return nil

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -71,6 +72,7 @@ func (r *fakeRows) Scan(_ ...any) error                            { return nil 
 func (r *fakeRows) Values() ([]any, error)                         { return nil, nil }
 func (r *fakeRows) RawValues() [][]byte                            { return nil }
 func (r *fakeRows) Conn() *pgx.Conn                                { return nil }
+func (r *fakeRows) TypeMap() *pgtype.Map                          { return nil }
 
 // fakeQueryable implements pgxcursor.Queryable; Begin returns a configured fakeTx.
 type fakeQueryable struct {
